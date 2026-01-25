@@ -1,0 +1,123 @@
+# ---------------------------------------------------
+# 基础配置 & DNS 防泄露设置
+# ---------------------------------------------------
+port: 7890
+socks-port: 7891
+mixed-port: 7893
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: false # 建议关闭 IPv6 以减少泄露风险
+
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip # 核心防泄露机制：向浏览器返回虚假 IP，解析在远程服务器完成
+  fake-ip-range: 198.18.0.1/16
+  nameserver:
+    - 223.5.5.5 # 阿里 DNS（用于快速解析国内域名）
+    - 119.29.29.29 # 腾讯 DNS
+  fallback:
+    - https://dns.google/dns-query # 谷歌 DoH
+    - https://1.1.1.1/dns-query # Cloudflare DoH
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+# ---------------------------------------------------
+# 节点配置 (请填入你的 VPS 信息)
+# ---------------------------------------------------
+proxies:
+  - name: "我的自建节点"
+    type: ss # 如果是 vmess/trojan 请自行更改
+    server: 你的VPS_IP
+    port: 你的端口
+    cipher: chacha20-ietf-poly1305
+    password: "你的密码"
+    # 如果是 vmess，还需要 uuid 等参数
+
+# ---------------------------------------------------
+# 策略组 (分流控制台)
+# ---------------------------------------------------
+proxy-groups:
+  - name: 🚀 全球加速
+    type: select
+    proxies:
+      - "我的自建节点"
+      - DIRECT
+
+  - name: 🤖 人工智能
+    type: select
+    proxies:
+      - "我的自建节点"
+
+  - name: 📺 流媒体
+    type: select
+    proxies:
+      - "我的自建节点"
+
+  - name: 🎮 Steam
+    type: select
+    proxies:
+      - DIRECT # 游戏下载建议直连
+      - "我的自建节点"
+
+  - name: 🍎 苹果服务
+    type: select
+    proxies:
+      - DIRECT
+      - "我的自建节点"
+
+  - name: Ⓜ️ 微软服务
+    type: select
+    proxies:
+      - DIRECT
+      - "我的自建节点"
+
+  - name: 🔍 谷歌服务
+    type: select
+    proxies:
+      - "我的自建节点"
+      - DIRECT
+
+# ---------------------------------------------------
+# 分流规则
+# ---------------------------------------------------
+rules:
+  # AI 平台 (ChatGPT, Claude, Gemini)
+  - DOMAIN-KEYWORD,openai,🤖 人工智能
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 人工智能
+  - DOMAIN-SUFFIX,anthropic.com,🤖 人工智能
+  - DOMAIN-SUFFIX,claude.ai,🤖 人工智能
+  - DOMAIN-SUFFIX,gemini.google.com,🤖 人工智能
+
+  # 流媒体 (Netflix, YouTube, Disney+)
+  - DOMAIN-SUFFIX,netflix.com,📺 流媒体
+  - DOMAIN-SUFFIX,youtube.com,📺 流媒体
+  - DOMAIN-SUFFIX,googlevideo.com,📺 流媒体
+  - DOMAIN-SUFFIX,disneyplus.com,📺 流媒体
+
+  # 谷歌服务
+  - DOMAIN-KEYWORD,google,🔍 谷歌服务
+  - DOMAIN-SUFFIX,gstatic.com,🔍 谷歌服务
+
+  # 苹果服务
+  - DOMAIN-SUFFIX,apple.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,icloud.com,🍎 苹果服务
+  - DOMAIN-SUFFIX,itunes.com,🍎 苹果服务
+
+  # 微软服务
+  - DOMAIN-SUFFIX,microsoft.com,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,windows.com,Ⓜ️ 微软服务
+  - DOMAIN-SUFFIX,live.com,Ⓜ️ 微软服务
+
+  # Steam
+  - DOMAIN-SUFFIX,steampowered.com,🎮 Steam
+  - DOMAIN-SUFFIX,steamcommunity.com,🎮 Steam
+  - DOMAIN-KEYWORD,steam,🎮 Steam
+
+  # 国内直连
+  - GEOIP,CN,DIRECT
+  - MATCH,🚀 全球加速
